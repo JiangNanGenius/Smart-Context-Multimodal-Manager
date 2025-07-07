@@ -1,6 +1,6 @@
 """
 title: 🚀 Advanced Multimodal Context Manager
-author: Assistant
+author: JiangNanGenius
 version: 1.0.0
 license: MIT
 required_open_webui_version: 0.5.17
