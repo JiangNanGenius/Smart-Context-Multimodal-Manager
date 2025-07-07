@@ -1,5 +1,3 @@
----
-
 ### 🚀 Advanced Multimodal Context Manager Plugin
 **智能长上下文与多模态内容处理器**
 
