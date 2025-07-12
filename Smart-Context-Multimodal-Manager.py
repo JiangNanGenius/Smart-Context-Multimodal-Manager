@@ -1,7 +1,7 @@
 """
 title: 🚀 Advanced Multimodal Context Manager
 author: JiangNanGenius
-version: 1.1.0
+version: 1.1.1
 license: MIT
 required_open_webui_version: 0.5.17
 description: 智能长上下文和多模态内容处理器，支持向量化检索、语义重排序、递归总结等功能
@@ -59,6 +59,12 @@ class Filter:
     class Valves(BaseModel):
         # 基础配置
         enable_processing: bool = Field(default=True, description="🔄 启用插件功能")
+        
+        excluded_models: str = Field(
+            default="",
+            description="🚫 排除模型列表 | 逗号分隔的模型名称，这些模型将跳过所有处理。支持模糊匹配，如: gpt-3.5, claude-instant, doubao-lite"
+        )
+        
         enable_multimodal: bool = Field(default=True, description="🖼️ 启用多模态处理")
         enable_vision_preprocessing: bool = Field(default=True, description="👁️ 启用图片预处理")
         force_truncate_first: bool = Field(default=True, description="✂️ 强制先检查截断")
@@ -120,7 +126,7 @@ class Filter:
     def __init__(self):
         self.valves = self.Valves()
         self.toggle = True
-        self.icon = """xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIGZpbGw9Im5vbmUiIHZpZXdCb3g9IjAgMCAyNCAyNCIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZT0iY3VycmVudENvbG9yIj4KICA8cGF0aCBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGQ9Ik0xMiAzdjE4bTktOWwtOS05LTkgOSIgLz4KPC9zdmc+"""
+        self.icon = """PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIGZpbGw9Im5vbmUiIHZpZXdCb3g9IjAgMCAyNCAyNCIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZT0iY3VycmVudENvbG9yIj4KICA8cGF0aCBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGQ9Ik0xMiAzdjE4bTktOWwtOS05LTkgOSIgLz4KPC9zdmc+"""
         
         self._vision_client = None
         self._encoding = None
@@ -131,6 +137,27 @@ class Filter:
         if self.valves.debug_level >= level:
             prefix = ["", "🐛", "🔍", "📋"][min(level, 3)]
             print(f"{prefix} {emoji} {message}")
+
+    def is_model_excluded(self, model_name: str) -> bool:
+        """检查模型是否在排除列表中"""
+        if not self.valves.excluded_models:
+            return False
+        
+        # 解析排除模型列表
+        excluded_list = [model.strip().lower() for model in self.valves.excluded_models.split(",") if model.strip()]
+        
+        if not excluded_list:
+            return False
+        
+        model_lower = model_name.lower()
+        
+        # 检查是否匹配排除列表中的任一项（支持模糊匹配）
+        for excluded_model in excluded_list:
+            if excluded_model in model_lower:
+                self.debug_log(1, f"模型 {model_name} 匹配排除规则 '{excluded_model}', 跳过处理", "🚫")
+                return True
+        
+        return False
 
     def get_encoding(self):
         if not TIKTOKEN_AVAILABLE or self._encoding:
@@ -647,6 +674,12 @@ class Filter:
             return body
         
         model_name = body.get("model", "")
+        
+        # 检查模型是否在排除列表中
+        if self.is_model_excluded(model_name):
+            self.debug_log(1, f"模型 {model_name} 在排除列表中，跳过所有处理", "🚫")
+            return body
+        
         self.debug_log(1, f"处理开始: {len(messages)}条消息, 模型: {model_name}", "🚀")
         
         try:
