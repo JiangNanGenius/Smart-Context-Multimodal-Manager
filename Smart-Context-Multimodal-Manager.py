@@ -1,10 +1,10 @@
 """
 title: 🚀 Advanced Multimodal Context Manager
 author: JiangNanGenius
-version: 1.5.1
+version: 1.5.2
 license: MIT
 required_open_webui_version: 0.5.17
-description: 智能长上下文和多模态内容处理器，支持向量化检索、语义重排序、递归总结等功能 - 修复过度压缩问题
+description: 智能长上下文和多模态内容处理器，支持向量化检索、语义重排序、递归总结等功能 - 修复JSON解析错误
 """
 
 import json
@@ -103,36 +103,42 @@ class Filter:
             default=True, description="📈 启用内容最大化保留"
         )
         
-        # 调试
+        # 调试和错误处理
         debug_level: int = Field(default=2, description="🐛 调试级别 0-3")
         show_frontend_progress: bool = Field(
             default=True, description="📱 显示处理进度"
         )
+        api_error_retry_times: int = Field(
+            default=2, description="🔄 API错误重试次数"
+        )
+        api_error_retry_delay: float = Field(
+            default=1.0, description="⏱️ API错误重试延迟(秒)"
+        )
         
-        # Token管理 - 最大化保留策略 (修复过度压缩问题)
+        # Token管理 - 最大化保留策略
         default_token_limit: int = Field(default=100000, description="⚖️ 默认token限制")
         token_safety_ratio: float = Field(
-            default=0.95, description="🛡️ Token安全比例(提高到0.95以最大化保留)"
+            default=0.95, description="🛡️ Token安全比例"
         )
         max_processing_iterations: int = Field(
-            default=3, description="🔄 最大处理迭代次数(降低到3避免过度压缩)"
+            default=3, description="🔄 最大处理迭代次数"
         )
         min_reduction_threshold: int = Field(
-            default=2000, description="📉 最小减少阈值(低于此值停止迭代)"
+            default=2000, description="📉 最小减少阈值"
         )
         
-        # 保护策略 - 强制保留用户最后消息
+        # 保护策略
         force_preserve_last_user_message: bool = Field(
             default=True, description="🔒 强制保留用户最后消息"
         )
         preserve_recent_exchanges: int = Field(
-            default=3, description="💬 保护最近完整对话轮次(增加到3)"
+            default=3, description="💬 保护最近完整对话轮次"
         )
         max_preserve_ratio: float = Field(
-            default=0.75, description="🔒 保护消息最大token比例(提高到0.75)"
+            default=0.75, description="🔒 保护消息最大token比例"
         )
         max_single_message_tokens: int = Field(
-            default=20000, description="📝 单条消息最大token(提高到20000)"
+            default=20000, description="📝 单条消息最大token"
         )
         
         # Vision配置
@@ -149,7 +155,7 @@ class Filter:
             description="👁️ Vision提示词",
         )
         vision_max_tokens: int = Field(
-            default=1200, description="👁️ Vision最大输出tokens(提高到1200)"
+            default=1200, description="👁️ Vision最大输出tokens"
         )
         
         # 多模态向量
@@ -178,32 +184,32 @@ class Filter:
             default="doubao-embedding-large-text-250515", description="🧠 文本向量模型"
         )
         
-        # 向量策略 (提高检索数量)
+        # 向量策略
         vector_strategy: str = Field(
             default="auto",
             description="🎯 向量化策略 (auto|multimodal_first|text_first|mixed|fallback|vision_to_text)",
         )
         vector_similarity_threshold: float = Field(
-            default=0.4, description="🎯 基础相似度阈值(降低到0.4保留更多)"
+            default=0.4, description="🎯 基础相似度阈值"
         )
         multimodal_similarity_threshold: float = Field(
-            default=0.35, description="🖼️ 多模态相似度阈值(降低到0.35)"
+            default=0.35, description="🖼️ 多模态相似度阈值"
         )
         text_similarity_threshold: float = Field(
-            default=0.45, description="📝 文本相似度阈值(降低到0.45)"
+            default=0.45, description="📝 文本相似度阈值"
         )
-        vector_top_k: int = Field(default=25, description="🔝 向量检索Top-K数量(提高到25)")
+        vector_top_k: int = Field(default=25, description="🔝 向量检索Top-K数量")
         
-        # 重排序 (提高返回数量)
+        # 重排序
         enable_reranking: bool = Field(default=True, description="🔄 启用重排序")
         rerank_api_base: str = Field(
             default="https://api.bochaai.com", description="🔄 重排序API"
         )
         rerank_api_key: str = Field(default="", description="🔑 重排序密钥")
         rerank_model: str = Field(default="gte-rerank", description="🧠 重排序模型")
-        rerank_top_k: int = Field(default=20, description="🔝 重排序返回数量(提高到20)")
+        rerank_top_k: int = Field(default=20, description="🔝 重排序返回数量")
         
-        # 摘要配置 (提高摘要长度)
+        # 摘要配置
         summary_api_base: str = Field(
             default="https://ark.cn-beijing.volces.com/api/v3", description="📝 摘要API"
         )
@@ -212,23 +218,23 @@ class Filter:
             default="doubao-1.5-thinking-pro-250415", description="🧠 摘要模型"
         )
         max_summary_length: int = Field(
-            default=4000, description="📏 摘要最大长度(提高到4000以保留更多信息)"
+            default=4000, description="📏 摘要最大长度"
         )
         max_recursion_depth: int = Field(
-            default=3, description="🔄 最大递归深度(降低到3避免过度压缩)"
+            default=3, description="🔄 最大递归深度"
         )
         
         # 性能配置
         max_concurrent_requests: int = Field(default=3, description="⚡ 最大并发数")
         request_timeout: int = Field(default=60, description="⏱️ 请求超时(秒)")
-        chunk_size: int = Field(default=1500, description="📄 分片大小(提高到1500)")
-        overlap_size: int = Field(default=150, description="🔗 重叠大小(提高到150)")
+        chunk_size: int = Field(default=1500, description="📄 分片大小")
+        overlap_size: int = Field(default=150, description="🔗 重叠大小")
 
     def __init__(self):
         print("\n" + "=" * 60)
-        print("🚀 Advanced Multimodal Context Manager v1.5.1")
+        print("🚀 Advanced Multimodal Context Manager v1.5.2")
         print("📍 插件正在初始化...")
-        print("🔧 修复过度压缩问题...")
+        print("🔧 修复JSON解析错误...")
         
         self.valves = self.Valves()
         self._vision_client = None
@@ -240,6 +246,7 @@ class Filter:
         self.vision_cache = {}
         self.vector_cache = {}
         self.processing_cache = {}
+        self.api_error_cache = {}
         
         # 解析多模态模型配置
         self.multimodal_models = set()
@@ -264,18 +271,8 @@ class Filter:
                         pass
         
         print(f"✅ 插件初始化完成")
-        print(f"🔧 处理功能: {self.valves.enable_processing}")
-        print(f"🔧 向量检索: {self.valves.enable_vector_retrieval}")
-        print(f"🔧 重排序: {self.valves.enable_reranking}")
-        print(f"🔧 内容最大化: {self.valves.enable_content_maximization}")
-        print(f"🔧 Token安全比例: {self.valves.token_safety_ratio}")
-        print(f"🔧 最大处理迭代: {self.valves.max_processing_iterations}")
-        print(f"🔧 保护比例: {self.valves.max_preserve_ratio}")
-        print(f"🔧 摘要长度: {self.valves.max_summary_length}")
-        print(f"🔧 向量检索数量: {self.valves.vector_top_k}")
-        print(f"🔧 重排序数量: {self.valves.rerank_top_k}")
-        print(f"🔧 多模态模型: {len(self.multimodal_models)}个")
-        print(f"🔧 Token限制配置: {len(self.model_token_limits)}个")
+        print(f"🔧 错误重试次数: {self.valves.api_error_retry_times}")
+        print(f"🔧 错误重试延迟: {self.valves.api_error_retry_delay}秒")
         print("=" * 60 + "\n")
 
     def debug_log(self, level: int, message: str, emoji: str = "🔧"):
@@ -434,6 +431,82 @@ class Filter:
             except:
                 pass
 
+    # ========== 增强的API调用方法 ==========
+    def is_json_response(self, content: str) -> bool:
+        """检查响应是否为JSON格式"""
+        if not content:
+            return False
+        
+        content = content.strip()
+        return content.startswith('{') or content.startswith('[')
+
+    def extract_error_info(self, content: str) -> str:
+        """从错误响应中提取关键信息"""
+        if not content:
+            return "空响应"
+        
+        # 检查是否为HTML错误页面
+        if content.strip().startswith('<!DOCTYPE') or '<html' in content:
+            # 尝试提取title
+            title_match = re.search(r'<title>(.*?)</title>', content, re.IGNORECASE)
+            if title_match:
+                return f"HTML错误页面: {title_match.group(1)}"
+            return "HTML错误页面"
+        
+        # 检查是否为JSON错误
+        try:
+            if self.is_json_response(content):
+                error_data = json.loads(content)
+                if isinstance(error_data, dict):
+                    error_msg = error_data.get('error', error_data.get('message', ''))
+                    if error_msg:
+                        return f"API错误: {error_msg}"
+            return f"响应内容: {content[:200]}..."
+        except:
+            return f"响应内容: {content[:200]}..."
+
+    async def safe_api_call(self, call_func, call_name: str, *args, **kwargs):
+        """安全的API调用包装器"""
+        error_key = f"{call_name}_{hash(str(args) + str(kwargs))}"
+        
+        # 检查错误缓存
+        if error_key in self.api_error_cache:
+            cache_time, error_msg = self.api_error_cache[error_key]
+            if asyncio.get_event_loop().time() - cache_time < 300:  # 5分钟缓存
+                self.debug_log(1, f"使用缓存的错误结果: {error_msg}", "⚠️")
+                return None
+        
+        for attempt in range(self.valves.api_error_retry_times + 1):
+            try:
+                result = await call_func(*args, **kwargs)
+                # 清除错误缓存
+                if error_key in self.api_error_cache:
+                    del self.api_error_cache[error_key]
+                return result
+                
+            except Exception as e:
+                error_msg = str(e)
+                
+                # 检查是否为JSON解析错误
+                if "is not valid JSON" in error_msg or "Unexpected token" in error_msg:
+                    self.debug_log(1, f"{call_name} JSON解析错误: {error_msg}", "❌")
+                    # 记录到错误缓存
+                    self.api_error_cache[error_key] = (asyncio.get_event_loop().time(), error_msg)
+                    return None
+                
+                if attempt < self.valves.api_error_retry_times:
+                    self.debug_log(
+                        1, f"{call_name} 第{attempt+1}次尝试失败，{self.valves.api_error_retry_delay}秒后重试: {error_msg}", "🔄"
+                    )
+                    await asyncio.sleep(self.valves.api_error_retry_delay)
+                else:
+                    self.debug_log(1, f"{call_name} 最终失败: {error_msg}", "❌")
+                    # 记录到错误缓存
+                    self.api_error_cache[error_key] = (asyncio.get_event_loop().time(), error_msg)
+                    return None
+        
+        return None
+
     # ========== 向量化功能 ==========
     def get_text_vector_client(self):
         if not OPENAI_AVAILABLE:
@@ -479,6 +552,22 @@ class Filter:
         
         return self._multimodal_vector_client
 
+    async def _get_text_embedding_impl(self, text: str, __event_emitter__):
+        """实际的文本向量获取实现"""
+        client = self.get_text_vector_client()
+        if not client:
+            return None
+        
+        response = await client.embeddings.create(
+            model=self.valves.text_vector_model,
+            input=[text[:8000]],
+            encoding_format="float",
+        )
+        
+        if response.data:
+            return response.data[0].embedding
+        return None
+
     async def get_text_embedding(
         self, text: str, __event_emitter__
     ) -> Optional[List[float]]:
@@ -492,26 +581,34 @@ class Filter:
         if cache_key in self.vector_cache:
             return self.vector_cache[cache_key]
         
-        client = self.get_text_vector_client()
+        embedding = await self.safe_api_call(
+            self._get_text_embedding_impl, "文本向量", text, __event_emitter__
+        )
+        
+        if embedding:
+            self.vector_cache[cache_key] = embedding
+            self.debug_log(3, f"文本向量获取成功: {len(embedding)}维", "📝")
+        
+        return embedding
+
+    async def _get_multimodal_embedding_impl(self, content, __event_emitter__):
+        """实际的多模态向量获取实现"""
+        client = self.get_multimodal_vector_client()
         if not client:
             return None
         
-        try:
-            response = await client.embeddings.create(
-                model=self.valves.text_vector_model,
-                input=[text[:8000]],  # 提高输入长度限制
-                encoding_format="float",
-            )
-            
-            if response.data:
-                embedding = response.data[0].embedding
-                self.vector_cache[cache_key] = embedding
-                self.debug_log(3, f"文本向量获取成功: {len(embedding)}维", "📝")
-                return embedding
-                
-        except Exception as e:
-            self.debug_log(1, f"文本向量获取失败: {e}", "❌")
+        # 处理输入格式
+        if isinstance(content, list):
+            input_data = content
+        else:
+            input_data = [{"type": "text", "text": str(content)[:8000]}]
         
+        response = await client.embeddings.create(
+            model=self.valves.multimodal_vector_model, input=input_data
+        )
+        
+        if response.data:
+            return response.data[0].embedding
         return None
 
     async def get_multimodal_embedding(
@@ -533,31 +630,15 @@ class Filter:
         if cache_key in self.vector_cache:
             return self.vector_cache[cache_key]
         
-        client = self.get_multimodal_vector_client()
-        if not client:
-            return None
+        embedding = await self.safe_api_call(
+            self._get_multimodal_embedding_impl, "多模态向量", content, __event_emitter__
+        )
         
-        try:
-            # 处理输入格式
-            if isinstance(content, list):
-                input_data = content
-            else:
-                input_data = [{"type": "text", "text": str(content)[:8000]}]  # 提高长度限制
-            
-            response = await client.embeddings.create(
-                model=self.valves.multimodal_vector_model, input=input_data
-            )
-            
-            if response.data:
-                embedding = response.data[0].embedding
-                self.vector_cache[cache_key] = embedding
-                self.debug_log(3, f"多模态向量获取成功: {len(embedding)}维", "🖼️")
-                return embedding
-                
-        except Exception as e:
-            self.debug_log(1, f"多模态向量获取失败: {e}", "❌")
+        if embedding:
+            self.vector_cache[cache_key] = embedding
+            self.debug_log(3, f"多模态向量获取成功: {len(embedding)}维", "🖼️")
         
-        return None
+        return embedding
 
     def cosine_similarity(self, vec1: List[float], vec2: List[float]) -> float:
         """计算余弦相似度"""
@@ -702,15 +783,53 @@ class Filter:
             return str(content)
 
     # ========== 重排序功能 ==========
+    async def _rerank_messages_impl(self, query_text: str, documents: List[str], __event_emitter__):
+        """实际的重排序实现"""
+        if not HTTPX_AVAILABLE:
+            return None
+        
+        async with httpx.AsyncClient(timeout=self.valves.request_timeout) as client:
+            headers = {
+                "Authorization": f"Bearer {self.valves.rerank_api_key}",
+                "Content-Type": "application/json",
+            }
+            
+            data = {
+                "model": self.valves.rerank_model,
+                "query": query_text,
+                "documents": documents,
+                "top_n": min(self.valves.rerank_top_k, len(documents)),
+                "return_documents": True,
+            }
+            
+            response = await client.post(
+                f"{self.valves.rerank_api_base}/v1/rerank",
+                headers=headers,
+                json=data,
+            )
+            
+            if response.status_code != 200:
+                raise Exception(f"HTTP {response.status_code}: {response.text}")
+            
+            # 检查响应格式
+            response_text = response.text
+            if not self.is_json_response(response_text):
+                error_info = self.extract_error_info(response_text)
+                raise Exception(f"非JSON响应: {error_info}")
+            
+            result = response.json()
+            
+            if result.get("code") != 200:
+                error_msg = result.get("message", "未知错误")
+                raise Exception(f"API错误: {error_msg}")
+            
+            return result.get("data", {}).get("results", [])
+
     async def rerank_messages(
         self, query_message: dict, candidate_messages: List[dict], __event_emitter__
     ) -> List[dict]:
         """重排序消息"""
         if not candidate_messages or not self.valves.enable_reranking:
-            return candidate_messages
-        
-        if not HTTPX_AVAILABLE:
-            self.debug_log(1, "httpx未安装，跳过重排序", "⚠️")
             return candidate_messages
         
         self.debug_log(1, f"开始重排序: 查询1条，候选{len(candidate_messages)}条", "🔄")
@@ -743,70 +862,38 @@ class Filter:
             return candidate_messages
         
         # 调用重排序API
-        try:
-            async with httpx.AsyncClient(timeout=self.valves.request_timeout) as client:
-                headers = {
-                    "Authorization": f"Bearer {self.valves.rerank_api_key}",
-                    "Content-Type": "application/json",
-                }
-                
-                data = {
-                    "model": self.valves.rerank_model,
-                    "query": query_text,
-                    "documents": documents,
-                    "top_n": min(self.valves.rerank_top_k, len(documents)),
-                    "return_documents": True,
-                }
-                
-                response = await client.post(
-                    f"{self.valves.rerank_api_base}/v1/rerank",
-                    headers=headers,
-                    json=data,
-                )
-                
-                if response.status_code == 200:
-                    result = response.json()
-                    if result.get("code") == 200 and result.get("data"):
-                        rerank_results = result["data"].get("results", [])
-                        
-                        # 按重排序结果重新排列消息
-                        reranked_messages = []
-                        for item in rerank_results:
-                            original_index = item.get("index", 0)
-                            if 0 <= original_index < len(candidate_messages):
-                                reranked_messages.append(
-                                    candidate_messages[original_index]
-                                )
-                                score = item.get("relevance_score", 0)
-                                self.debug_log(
-                                    3,
-                                    f"重排序结果: index={original_index}, score={score:.3f}",
-                                    "📊",
-                                )
-                        
-                        self.debug_log(
-                            1,
-                            f"重排序完成: {len(candidate_messages)} -> {len(reranked_messages)}条",
-                            "✅",
-                        )
-                        
-                        await self.send_status(
-                            __event_emitter__,
-                            f"重排序完成: {len(reranked_messages)}条消息",
-                            True,
-                            "✅",
-                        )
-                        
-                        return reranked_messages
-                    else:
-                        self.debug_log(1, f"重排序API返回错误: {result}", "❌")
-                else:
+        rerank_results = await self.safe_api_call(
+            self._rerank_messages_impl, "重排序", query_text, documents, __event_emitter__
+        )
+        
+        if rerank_results:
+            # 按重排序结果重新排列消息
+            reranked_messages = []
+            for item in rerank_results:
+                original_index = item.get("index", 0)
+                if 0 <= original_index < len(candidate_messages):
+                    reranked_messages.append(candidate_messages[original_index])
+                    score = item.get("relevance_score", 0)
                     self.debug_log(
-                        1, f"重排序API调用失败: {response.status_code}", "❌"
+                        3,
+                        f"重排序结果: index={original_index}, score={score:.3f}",
+                        "📊",
                     )
-                    
-        except Exception as e:
-            self.debug_log(1, f"重排序调用异常: {e}", "❌")
+            
+            self.debug_log(
+                1,
+                f"重排序完成: {len(candidate_messages)} -> {len(reranked_messages)}条",
+                "✅",
+            )
+            
+            await self.send_status(
+                __event_emitter__,
+                f"重排序完成: {len(reranked_messages)}条消息",
+                True,
+                "✅",
+            )
+            
+            return reranked_messages
         
         return candidate_messages
 
@@ -834,6 +921,34 @@ class Filter:
         
         return self._vision_client
 
+    async def _describe_image_impl(self, image_url: str, __event_emitter__):
+        """实际的图片描述实现"""
+        client = self.get_vision_client()
+        if not client:
+            return None
+        
+        response = await client.chat.completions.create(
+            model=self.valves.vision_model,
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": self.valves.vision_prompt_template,
+                        },
+                        {"type": "image_url", "image_url": {"url": image_url}},
+                    ],
+                }
+            ],
+            max_tokens=self.valves.vision_max_tokens,
+            temperature=0.2,
+        )
+        
+        if response.choices:
+            return response.choices[0].message.content.strip()
+        return None
+
     async def describe_image(self, image_url: str, __event_emitter__) -> str:
         """描述单张图片"""
         image_hash = hashlib.md5(image_url.encode()).hexdigest()
@@ -842,48 +957,22 @@ class Filter:
             self.debug_log(3, f"使用缓存的图片描述: {image_hash[:8]}", "📋")
             return self.vision_cache[image_hash]
         
-        client = self.get_vision_client()
-        if not client:
-            return "无法处理图片：Vision服务未配置"
+        self.debug_log(2, f"开始识别图片: {image_hash[:8]}", "👁️")
         
-        try:
-            self.debug_log(2, f"开始识别图片: {image_hash[:8]}", "👁️")
+        description = await self.safe_api_call(
+            self._describe_image_impl, "图片识别", image_url, __event_emitter__
+        )
+        
+        if description:
+            # 提高描述长度限制
+            if len(description) > 1200:
+                description = description[:1200] + "..."
             
-            response = await client.chat.completions.create(
-                model=self.valves.vision_model,
-                messages=[
-                    {
-                        "role": "user",
-                        "content": [
-                            {
-                                "type": "text",
-                                "text": self.valves.vision_prompt_template,
-                            },
-                            {"type": "image_url", "image_url": {"url": image_url}},
-                        ],
-                    }
-                ],
-                max_tokens=self.valves.vision_max_tokens,
-                temperature=0.2,
-            )
-            
-            if response.choices:
-                description = response.choices[0].message.content.strip()
-                
-                # 提高描述长度限制
-                if len(description) > 1200:
-                    description = description[:1200] + "..."
-                
-                self.vision_cache[image_hash] = description
-                self.debug_log(2, f"图片识别完成: {len(description)}字符", "✅")
-                return description
-                
-            return "图片描述生成失败"
-            
-        except Exception as e:
-            error_msg = f"图片处理错误: {str(e)[:100]}"
-            self.debug_log(1, error_msg, "❌")
-            return error_msg
+            self.vision_cache[image_hash] = description
+            self.debug_log(2, f"图片识别完成: {len(description)}字符", "✅")
+            return description
+        
+        return "图片处理失败：无法获取描述"
 
     async def process_message_images(self, message: dict, __event_emitter__) -> dict:
         """处理单条消息中的图片"""
@@ -960,6 +1049,9 @@ class Filter:
                         if item.get("type") == "image_url"
                     ]
                 )
+        
+        if total_images == 0:
+            return messages
         
         self.debug_log(1, f"开始处理多模态内容：{total_images} 张图片", "🖼️")
         
@@ -1113,6 +1205,46 @@ class Filter:
         
         return protected, to_process
 
+    async def _summarize_messages_impl(self, conversation_text: str, iteration: int):
+        """实际的摘要实现"""
+        client = self.get_summary_client()
+        if not client:
+            return None
+        
+        # 增强的摘要提示
+        system_prompt = f"""你是专业的对话摘要助手。请为以下对话创建详细的结构化摘要，**必须最大化保留信息**。
+
+摘要要求：
+1. 保持对话的完整逻辑脉络和时间顺序
+2. 保留所有关键信息、技术细节、参数配置、数据
+3. 保留重要的问答内容和讨论要点
+4. 如有图片描述，完整保留视觉信息
+5. 使用清晰的结构：问题 → 回答 → 后续讨论
+6. 优先级：内容完整性 > 长度限制
+7. 如果内容很重要，**必须**保留，可以适当超出长度限制
+8. 保留具体的配置、代码、数据、参数等技术细节
+
+处理信息：
+- 第{iteration+1}次摘要处理
+- 目标：最大化信息保留，避免重要信息丢失
+
+对话内容："""
+        
+        response = await client.chat.completions.create(
+            model=self.valves.summary_model,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": conversation_text},
+            ],
+            max_tokens=self.valves.max_summary_length,
+            temperature=0.05,
+            timeout=self.valves.request_timeout,
+        )
+        
+        if response.choices and response.choices[0].message.content:
+            return response.choices[0].message.content.strip()
+        return None
+
     async def summarize_messages_v2(
         self, messages: List[dict], __event_emitter__, iteration: int = 0
     ) -> str:
@@ -1138,10 +1270,6 @@ class Filter:
                     else:
                         processed_messages.append(msg)
         
-        client = self.get_summary_client()
-        if not client:
-            return ""
-        
         # 按角色分组处理
         conversation_parts = []
         current_exchange = []
@@ -1150,7 +1278,7 @@ class Filter:
             role = msg.get("role", "unknown")
             content = self.extract_text_from_content(msg.get("content", ""))
             
-            if len(content) > 6000:  # 提高内容长度限制
+            if len(content) > 6000:
                 content = content[:6000] + "...(长内容已截断)"
             
             if role == "user":
@@ -1168,61 +1296,21 @@ class Filter:
         
         conversation_text = "\n\n".join(conversation_parts)
         
-        # 增强的摘要提示
-        system_prompt = f"""你是专业的对话摘要助手。请为以下对话创建详细的结构化摘要，**必须最大化保留信息**。
-
-摘要要求：
-1. 保持对话的完整逻辑脉络和时间顺序
-2. 保留所有关键信息、技术细节、参数配置、数据
-3. 保留重要的问答内容和讨论要点
-4. 如有图片描述，完整保留视觉信息
-5. 使用清晰的结构：问题 → 回答 → 后续讨论
-6. 优先级：内容完整性 > 长度限制
-7. 如果内容很重要，**必须**保留，可以适当超出长度限制
-8. 保留具体的配置、代码、数据、参数等技术细节
-
-处理信息：
-- 原始消息数：{len(processed_messages)}
-- 第{iteration+1}次摘要处理
-- 目标：最大化信息保留，避免重要信息丢失
-
-对话内容："""
+        # 调用摘要API
+        summary = await self.safe_api_call(
+            self._summarize_messages_impl, "摘要生成", conversation_text, iteration
+        )
         
-        try:
-            response = await client.chat.completions.create(
-                model=self.valves.summary_model,
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": conversation_text},
-                ],
-                max_tokens=self.valves.max_summary_length,
-                temperature=0.05,  # 更低的温度确保一致性
-                timeout=self.valves.request_timeout,
-            )
-            
-            if response.choices and response.choices[0].message.content:
-                summary = response.choices[0].message.content.strip()
-                
-                if len(summary) < 200:  # 提高最小摘要长度
-                    self.debug_log(
-                        1, f"⚠️ 摘要过短({len(summary)}字符)，可能信息丢失", "📝"
-                    )
-                    # 摘要过短时，返回原始内容的截断版本
-                    if len(conversation_text) > 2000:
-                        return conversation_text[:2000] + "...(原始内容截断)"
-                    return conversation_text
-                
-                self.debug_log(1, f"📝 摘要生成成功: {len(summary)}字符", "📝")
-                return summary
-                
-        except Exception as e:
-            self.debug_log(1, f"❌ 摘要生成失败: {e}", "📝")
-            # 摘要失败时，返回原始内容的截断版本
-            if len(conversation_text) > 2000:
-                return conversation_text[:2000] + "...(原始内容截断)"
-            return conversation_text
+        if summary and len(summary) >= 200:
+            self.debug_log(1, f"📝 摘要生成成功: {len(summary)}字符", "📝")
+            return summary
+        elif summary:
+            self.debug_log(1, f"⚠️ 摘要过短({len(summary)}字符)，使用原始内容", "📝")
         
-        return ""
+        # 摘要失败或过短时，返回原始内容的截断版本
+        if len(conversation_text) > 2000:
+            return conversation_text[:2000] + "...(原始内容截断)"
+        return conversation_text
 
     def format_exchange(self, exchange: List[str]) -> str:
         """格式化对话轮次"""
@@ -1375,6 +1463,39 @@ class Filter:
         
         return processed_messages
 
+    async def _summarize_single_message_impl(self, content: str, iteration: int):
+        """实际的单条消息摘要实现"""
+        client = self.get_summary_client()
+        if not client:
+            return None
+        
+        system_prompt = f"""请将以下内容进行详细摘要，**必须最大化保留关键信息**：
+
+要求：
+- 保留所有重要细节、参数、配置、数据
+- 保留图片描述信息
+- 保持逻辑结构完整
+- 优先级：内容完整性 > 长度限制
+- 如果内容很重要，可以适当超出长度限制
+- 这是第{iteration+1}次处理，但仍需保留核心技术信息
+
+目标长度：{self.valves.max_summary_length}字符（可适当超出）"""
+        
+        response = await client.chat.completions.create(
+            model=self.valves.summary_model,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": content[:8000]},
+            ],
+            max_tokens=self.valves.max_summary_length,
+            temperature=0.05,
+            timeout=self.valves.request_timeout,
+        )
+        
+        if response.choices and response.choices[0].message.content:
+            return response.choices[0].message.content.strip()
+        return None
+
     async def summarize_single_message_v2(
         self, message: dict, __event_emitter__, iteration: int = 0
     ) -> Optional[dict]:
@@ -1390,49 +1511,15 @@ class Filter:
         if not content:
             return None
         
-        client = self.get_summary_client()
-        if not client:
-            # 简单截断
-            if len(content) > 2000:
-                result = processed_message.copy()
-                result["content"] = content[:2000] + "...(内容已截断)"
-                return result
-            return processed_message
+        # 尝试API摘要
+        summary = await self.safe_api_call(
+            self._summarize_single_message_impl, "单条消息摘要", content, iteration
+        )
         
-        try:
-            system_prompt = f"""请将以下内容进行详细摘要，**必须最大化保留关键信息**：
-
-要求：
-- 保留所有重要细节、参数、配置、数据
-- 保留图片描述信息
-- 保持逻辑结构完整
-- 优先级：内容完整性 > 长度限制
-- 如果内容很重要，可以适当超出长度限制
-- 这是第{iteration+1}次处理，但仍需保留核心技术信息
-
-目标长度：{self.valves.max_summary_length // 2}字符（可适当超出）"""
-            
-            response = await client.chat.completions.create(
-                model=self.valves.summary_model,
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": content[:8000]},  # 提高输入长度限制
-                ],
-                max_tokens=self.valves.max_summary_length,  # 使用完整长度
-                temperature=0.05,
-                timeout=self.valves.request_timeout,
-            )
-            
-            if response.choices and response.choices[0].message.content:
-                summary = response.choices[0].message.content.strip()
-                
-                if len(summary) > 100:  # 降低最小摘要长度要求
-                    result = processed_message.copy()
-                    result["content"] = f"[智能摘要] {summary}"
-                    return result
-                    
-        except Exception as e:
-            self.debug_log(1, f"❌ 单条消息摘要失败: {e}", "📝")
+        if summary and len(summary) > 100:
+            result = processed_message.copy()
+            result["content"] = f"[智能摘要] {summary}"
+            return result
         
         # 失败时更保守的截断
         if len(content) > 2000:
@@ -1542,8 +1629,7 @@ class Filter:
         token_limit = self.get_model_token_limit(model_name)
         
         print(f"📊 Token: {original_tokens}/{token_limit}")
-        print(f"🔧 安全比例: {self.valves.token_safety_ratio}")
-        print(f"🔧 保护比例: {self.valves.max_preserve_ratio}")
+        print(f"🔧 错误重试: {self.valves.api_error_retry_times}次")
         
         try:
             # 1. 多模态处理
@@ -1569,7 +1655,7 @@ class Filter:
                 retention_ratio = final_tokens / original_tokens if original_tokens > 0 else 0
                 print(f"📈 内容保留比例: {retention_ratio:.2%}")
                 
-                if retention_ratio < 0.3:  # 如果保留比例过低，发出警告
+                if retention_ratio < 0.3:
                     print(f"⚠️ 内容保留比例过低({retention_ratio:.2%})，建议调整参数")
                 
                 body["messages"] = final_messages
